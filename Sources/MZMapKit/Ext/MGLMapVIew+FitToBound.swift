@@ -7,7 +7,7 @@
 
 import Mapbox
 
-extension MGLMapView {
+public extension MGLMapView {
     func fetchAndfitToBound<B: Encodable& Codable, T: Decodable>(_ query: B,
                                                                  edgePadding: UIEdgeInsets? = nil,
                                                                  mapToCoord: ((T) -> ([CLLocationCoordinate2D]?)),
