@@ -8,7 +8,7 @@
 import Mapbox
 
 public extension MGLMapView {
-    func fetchAndfitToBound<B: Encodable& Codable, T: Decodable>(_ query: B,
+    func fetchAndfitToBound<B: Encodable, T: Decodable>(_ query: B,
                                                                  edgePadding: UIEdgeInsets? = nil,
                                                                  mapToCoord: ((T) -> ([CLLocationCoordinate2D]?)),
                                                                  completionHandler: (() -> ())? = nil) async throws {
