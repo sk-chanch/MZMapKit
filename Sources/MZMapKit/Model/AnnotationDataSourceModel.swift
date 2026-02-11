@@ -8,7 +8,7 @@
 import Foundation
 import CoreLocation
 
-protocol AnnotationDataSourceModel:Identifiable{
+protocol AnnotationDataSourceModel: Identifiable {
     var title:String { get}
     var id:Int { get}
     var coord:CLLocationCoordinate2D {get}

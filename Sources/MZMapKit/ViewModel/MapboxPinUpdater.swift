@@ -28,9 +28,9 @@ class MapboxPinUpdater<PinContent: View, PinCluster: View, MapResponseModel: Cod
     var cancellable: Set<AnyCancellable> = .init()
     var getPincancellable: Set<AnyCancellable> = .init()
     
-    var allPin:[UserInfoMGLPointAnnotationView]{
+    var allPin:[CustomPointAnnotation]{
         mapView?.annotations?
-            .map{$0 as? UserInfoMGLPointAnnotationView}
+            .map{$0 as? CustomPointAnnotation}
             .filter{($0?.userInfo as? Int) == 0}
             .compactMap{$0} ?? []
     }
@@ -133,7 +133,7 @@ class MapboxPinUpdater<PinContent: View, PinCluster: View, MapResponseModel: Cod
     
     //MARK: lookup the image to load by switching on the annotation's title string
     func viewForAnnotation(annotation: MGLAnnotation) -> MGLAnnotationView? {
-        let reuseIdentifier = annotation.reuseIdentifier
+        let reuseIdentifier = (annotation as? CustomPointAnnotation)?.type ?? .unknown
         
         guard let cluster = annotation as? CKCluster
         else { return nil }
@@ -143,19 +143,19 @@ class MapboxPinUpdater<PinContent: View, PinCluster: View, MapResponseModel: Cod
             else { fatalError("please setup clusterSize") }
             
             let v = CustomAnnotationClusterView(annotation: annotation,
-                                                reuseIdentifier: reuseIdentifier,
+                                                reuseIdentifier: reuseIdentifier.identifier,
                                                 cluster: cluster,
                                                 pinCluster: pinCluster)
             v.frame =  CGRect(origin: .zero, size: clusterSize)
             
             return v
-        } else if let annotationInfo = cluster.firstAnnotation as? UserInfoMGLPointAnnotationView , cluster.count == 1 {
+        } else if let annotationInfo = cluster.firstAnnotation as? CustomPointAnnotation , cluster.count == 1 {
             
             guard let pinSize = pinSize
             else { fatalError("please setup pinSize") }
             
             let view = CustomAnnotationView(annotation: annotation,
-                                            reuseIdentifier: reuseIdentifier,
+                                            reuseIdentifier: reuseIdentifier.identifier,
                                             userInfo: annotationInfo.userInfo,
                                             pin: pinView)
             

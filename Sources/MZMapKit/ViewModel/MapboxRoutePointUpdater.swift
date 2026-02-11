@@ -21,10 +21,10 @@ class MapboxRoutePointUpdater<RoutePin: View, RoutePinResponseModel: Codable>: O
     weak var configuration: MapViewConfigurationViewModel?
     weak var mapboxProxy: MapboxProxy?
     
-    var allRoutePoint: [UserInfoMGLPointAnnotationView] {
+    var allRoutePoint: [CustomPointAnnotation] {
         mapView?.annotations?
-            .map{$0 as? UserInfoMGLPointAnnotationView}
-            .filter{ $0?.isRoutePin ?? false }
+            .map{$0 as? CustomPointAnnotation}
+            .filter{ $0?.type == .routePoint }
             .compactMap{$0} ?? []
     }
     
@@ -58,32 +58,6 @@ class MapboxRoutePointUpdater<RoutePin: View, RoutePinResponseModel: Codable>: O
     private func binding() {
         guard urlForRoutePin != nil
         else { return }
-        
-//        $routePointDataSource
-//            .filter{ [weak self] _ in self?.isShowPoint ?? true }
-//            .filter{[weak self] _ in self?.configuration?.isViewDisappear.negated ?? true }
-//            .removeDuplicates()
-//            .throttle(for: .seconds(2), scheduler: DispatchQueue.main, latest: true)
-//            .map{[weak self] x -> [MGLPointAnnotation] in
-//               
-//                return x.filter{ $0.title != "Mission" }.map{self?.createAnnotation(with: $0, userInfo: 1)}.compactMap{$0}
-//                
-//            }
-////                .filter{[weak self] _ in self?.isRegionChange.negated ?? false }
-//            .receive(on: DispatchQueue.main)
-//            .sink(receiveValue: {[weak self] value in
-//                guard value.count > 0
-//                else {
-//                    self?.mapView?.removeAnnotations(self?.allRoutePoint ?? [])
-//                    return
-//                }
-//                
-//                self?.mapView?.removeAnnotations(self?.allRoutePoint ?? [])
-//                self?.mapView?.addAnnotations(value)
-//                
-////                    print("update RoutePoint")
-//            })
-//            .store(in: &cancellable)
         
         mapboxProxy?.regionDidChangeAnimated
             .delay(for: .seconds(2), scheduler: DispatchQueue.main )
@@ -127,12 +101,13 @@ class MapboxRoutePointUpdater<RoutePin: View, RoutePinResponseModel: Codable>: O
         }
     }
     
-    func createAnnotation(with item:any AnnotationDataSourceModel, userInfo:Int) -> UserInfoMGLPointAnnotationView{
-        let pa = UserInfoMGLPointAnnotationView()
+    func createAnnotation(with item:any AnnotationDataSourceModel, userInfo:Int) -> CustomPointAnnotation {
+        let pa = CustomPointAnnotation()
         pa.title = item.title
         pa.subtitle = "\(item.id)"
         pa.coordinate = item.coord
         pa.userInfo = userInfo
+        pa.type = .routePoint
         
         return pa
     }
@@ -146,9 +121,9 @@ class MapboxRoutePointUpdater<RoutePin: View, RoutePinResponseModel: Codable>: O
     
     //MARK: lookup the image to load by switching on the annotation's title string
     func viewForAnnotationRoutePoint(annotation: MGLAnnotation) -> CustomAnnotationViewRoutePoint<RoutePin>? {
-        let reuseIdentifier = annotation.reuseIdentifier
+        let pinType = (annotation as? CustomPointAnnotation)?.type ?? .unknown
         let view = CustomAnnotationViewRoutePoint(annotation: annotation,
-                                                  reuseIdentifier: reuseIdentifier,
+                                                  reuseIdentifier: pinType.identifier,
                                                   viewForRoutePin: viewForRoutePin)
         view.frame =  CGRect(origin: .zero, size: routePinSize ?? .init(width: 30, height: 30))
         

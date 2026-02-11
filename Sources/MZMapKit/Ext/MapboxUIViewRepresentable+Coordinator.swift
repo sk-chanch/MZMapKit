@@ -27,7 +27,11 @@ extension MapboxUIViewRepresentable {
         }
         var parent:MapboxUIViewRepresentable
         
-        var tapPin = MGLPointAnnotation()
+        lazy var tapPin: CustomPointAnnotation = {
+            let pin = CustomPointAnnotation()
+            pin.type = .droppedPin
+            return pin
+        }()
         
         var cancellable = Set<AnyCancellable>()
         
@@ -40,6 +44,8 @@ extension MapboxUIViewRepresentable {
         var isRegionChange = false
         private var hasBaindingExpandMapButton = false
         private weak var configuration: MapViewConfigurationViewModel?
+        
+        // MARK: - Init
         
         public init(parent: MapboxUIViewRepresentable,
              configuration: MapViewConfigurationViewModel?) {
@@ -82,6 +88,8 @@ extension MapboxUIViewRepresentable {
             binding()
         }
         
+        // MARK: - Private Method
+        
         private func bindingButtonOpenExpandMap() {
             guard !hasBaindingExpandMapButton
             else { return }
@@ -117,7 +125,11 @@ extension MapboxUIViewRepresentable {
         
         private func binding() {
             configuration?.forceClearTapGroundPin = {[weak self] in
-                guard let exitingPin = self?.mapView?.annotations?.first(where: {$0.title == self?.parent.pinMarkKey})
+                let exitingPin = self?.mapView?.annotations?
+                    .compactMap{ $0 as? CustomPointAnnotation }
+                    .first(where: {$0.type == .droppedPin })
+                
+                guard let exitingPin
                 else { return }
                 
                 self?.mapView?.removeAnnotation(exitingPin)
@@ -173,25 +185,43 @@ extension MapboxUIViewRepresentable {
                     return nil
                 }
                 
-                var annotationView: MGLAnnotationView? = mapView.dequeueReusableAnnotationView(withIdentifier: annotation.reuseIdentifier)
+                let pinType = (annotation as? CustomPointAnnotation)?.type ?? .unknown
+                
+                var annotationView: MGLAnnotationView? = mapView.dequeueReusableAnnotationView(withIdentifier: pinType.identifier)
                 
                 // if the annotation image hasn‘t been used yet, initialize it here with the reuse identifier
                 if annotationView == nil {
                     // lookup the image for this annotation
                     
+                    // Check is Cluster Type
                     if let annotation = annotation as? CKCluster{
                         annotationView = self?.mapboxPinUpdater?.viewForAnnotation(annotation: annotation)
-                    } else if annotation.title == "waypoint" {
-                        return nil
-                    } else if annotation.title != self?.parent.pinMarkKey{
-                        annotationView = self?.mapboxRoutePointUpdater?.viewForAnnotationRoutePoint(annotation: annotation)
-                    } else {
-                        print("type anotation not correct")
+                    } else if let customAnnotation = annotation as? CustomPointAnnotation {
+                     
+                        switch customAnnotation.type {
+                        case .custom :
+                            if let pinCustomContent = self?.parent.pinCustomContent {
+                                
+                                guard let customPinSize = self?.parent.customPinSize
+                                else { fatalError("please setup customPinSize") }
+                                
+                                annotationView = CustomAnnotationView(annotation: annotation,
+                                                                      reuseIdentifier: pinType.identifier,
+                                                                      userInfo: customAnnotation.userInfo,
+                                                                      pin: pinCustomContent)
+                                
+                                annotationView?.frame = CGRect(origin: .zero, size: customPinSize)
+                            }
+                        case .routePoint:
+                            annotationView = self?.mapboxRoutePointUpdater?.viewForAnnotationRoutePoint(annotation: annotation)
+                        default:
+                            break
+                        }
+                        
                     }
-                    
                 }
                 
-                
+                // ignore CustomMGLPolyline return nil
                 return annotationView
             }
             
@@ -203,9 +233,9 @@ extension MapboxUIViewRepresentable {
                     
                     if pinCount > 1 {
                         let annotations = (ck.annotations as [AnyObject] )
-                            .compactMap{ $0 as?  UserInfoMGLPointAnnotationView}.compactMap{ $0 }
+                            .compactMap{ $0 as?  CustomPointAnnotation}.compactMap{ $0 }
                         self?.parent.didSelectCluster?(annotations)
-                    } else if pinCount == 1, let annotation = ck.firstAnnotation as? UserInfoMGLPointAnnotationView{
+                    } else if pinCount == 1, let annotation = ck.firstAnnotation as? CustomPointAnnotation{
                         self?.parent.didSelectPin?(annotation)
                     }
                    
@@ -229,9 +259,9 @@ extension MapboxUIViewRepresentable {
             else { return }
            
             tapPin.coordinate = tapCoordinate
-            tapPin.title = parent.pinMarkKey
+            tapPin.type = .droppedPin
             
-            if let exitingPin = mapView?.annotations?.first(where: {$0.title == parent.pinMarkKey}){
+            if let exitingPin = mapView?.annotations?.compactMap { $0 as? CustomPointAnnotation }.first(where: {$0.type == .droppedPin}) {
                 mapView?.removeAnnotation(exitingPin)
                 parent.didClearTapGround?()
             

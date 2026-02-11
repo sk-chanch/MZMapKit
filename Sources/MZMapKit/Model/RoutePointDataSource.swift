@@ -9,7 +9,7 @@ import Foundation
 import CoreLocation
 
 
-struct RoutePointDataSource:AnnotationDataSourceModel{
+struct RoutePointDataSource: AnnotationDataSourceModel {
    
     let id: Int
     let title:String
@@ -17,7 +17,7 @@ struct RoutePointDataSource:AnnotationDataSourceModel{
     
 }
 
-extension RoutePointDataSource:Equatable{
+extension RoutePointDataSource: Equatable {
     static func == (lhs: RoutePointDataSource, rhs: RoutePointDataSource) -> Bool {
         lhs.id == rhs.id
     }

@@ -16,7 +16,7 @@ class CustomAnnotationViewRoutePoint<RoutePin: View>: MGLAnnotationView{
     init(annotation: MGLAnnotation?,
                   reuseIdentifier: String?,
                   @ViewBuilder viewForRoutePin: (Any?) -> RoutePin) {
-        let info = (annotation as? UserInfoMGLPointAnnotationView)?.userInfo
+        let info = (annotation as? CustomPointAnnotation)?.userInfo
         self.hostingController = .init(rootView: viewForRoutePin(info))
         super.init(annotation: annotation, reuseIdentifier: reuseIdentifier)
         

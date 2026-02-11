@@ -34,19 +34,20 @@ public enum MapboxResponseEmptyModel: Codable {
 
 public struct MapboxUIViewRepresentable<PinContent: View,
                                         PinCluster: View,
+                                        PinCustom: View,
                                         PinResponseModel: Codable,
                                         RoutePin: View,
                                         RoutePinResponseModel: Codable,
                                         RouteLineResponseModel: Decodable>: UIViewRepresentable{
-    
+    // Pin View Builder
     var pinContent: (Any?) -> PinContent
     var pinCluster: (CKCluster) -> PinCluster
     var viewForRoutePin: (Any?) -> RoutePin
-    
-    let pinMarkKey = "mark-from-tap"
+    var pinCustomContent: (Any?) -> PinCustom
     
     @Weak var configuration: MapViewConfigurationViewModel?
     
+    // Setup
     var coordinateFocus:CLLocationCoordinate2D?
     var firstZoom: CGFloat?
     var attributionButtonImage: UIImage?
@@ -54,43 +55,53 @@ public struct MapboxUIViewRepresentable<PinContent: View,
     var isShowPin: Bool = true
     var isShowPoint: Bool = true
     var isShowButtonExpandMap: Bool = true
+    
+    // Main background map
     var layerURL: String?
+    
+    // Style
     var pinSize: CGSize?
     var clusterSize: CGSize?
     var routePinSize: CGSize?
     var routeLineColor: Color?
     var expandMapBackgroundButtonColor: Color?
+    var customPinSize: CGSize?
     
-    var didSelectPin: ( (UserInfoMGLPointAnnotationView) -> Void )?
+    // Action
+    var didSelectPin: ( (CustomPointAnnotation) -> Void )?
     var didTapGround: ( (CLLocationCoordinate2D) -> Void )?
     var didClearTapGround: ( () -> Void )?
     var didFinishLoadMap: ((MGLMapView)->())?
     var didTapExpand: (() -> Void)?
-   
     var onPinUpdate: (()->())?
     var urlForPin: ((_ bbox: String) -> (String))?
-    var didSelectCluster: (([UserInfoMGLPointAnnotationView])->())?
+    var didSelectCluster: (([CustomPointAnnotation])->())?
     
+    // Build Pin Data
     var annotationFor: ((PinResponseModel?) -> ([MGLPointAnnotation]))?
-    
-    //for pin
-    var urlForRoutePin: ((_ bbox: String) -> (String))?
     var annotationForRoutePin: ((RoutePinResponseModel?) -> ([MGLPointAnnotation]))?
     
+    //for setup URL
+    var urlForRoutePin: ((_ bbox: String) -> (String))?
     var urlForRouteLine: ((_ bbox: String) -> (String))?
+    
     var regionDidChangeAnimated: ((MGLMapView?)->())?
     
     var coordinatesForRouteLine: ((RouteLineResponseModel?) -> ([CLLocationCoordinate2D]?))?
     
-    public init(pinResponseModel: PinResponseModel.Type = MapboxResponseEmptyModel.self,
-                routePinResponseModel: RoutePinResponseModel.Type = MapboxResponseEmptyModel.self,
-                routeLineResponseModel: RouteLineResponseModel.Type = MapboxResponseEmptyModel.self,
-                @ViewBuilder pinContent: @escaping (Any?) -> PinContent = { _ in Color.red },
-                @ViewBuilder pinCluster: @escaping (CKCluster) -> PinCluster = { _ in Color.green },
-                @ViewBuilder viewForRoutePin: @escaping (Any?) -> RoutePin = { _ in Color.blue }) {
+    public init(
+        pinResponseModel: PinResponseModel.Type = MapboxResponseEmptyModel.self,
+        routePinResponseModel: RoutePinResponseModel.Type = MapboxResponseEmptyModel.self,
+        routeLineResponseModel: RouteLineResponseModel.Type = MapboxResponseEmptyModel.self,
+        @ViewBuilder pinContent: @escaping (Any?) -> PinContent = { _ in Color.red },
+        @ViewBuilder pinCluster: @escaping (CKCluster) -> PinCluster = { _ in Color.green },
+        @ViewBuilder viewForRoutePin: @escaping (Any?) -> RoutePin = { _ in Color.blue },
+        @ViewBuilder pinCustomContent: @escaping (Any?) -> PinCustom = { _ in Color.yellow }
+    ) {
         self.pinContent = pinContent
         self.pinCluster = pinCluster
         self.viewForRoutePin = viewForRoutePin
+        self.pinCustomContent = pinCustomContent
     }
     
     
@@ -131,6 +142,6 @@ public struct MapboxUIViewRepresentable<PinContent: View,
 }
 
 
-public class CustomMGLPolyline: MGLPolyline{
-    var color:UIColor?
+public class CustomMGLPolyline: MGLPolyline {
+    var color: UIColor?
 }

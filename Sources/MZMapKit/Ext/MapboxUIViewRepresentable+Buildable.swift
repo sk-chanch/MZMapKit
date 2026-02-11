@@ -12,6 +12,8 @@ import ClusterKit
 extension MapboxUIViewRepresentable: Buildable {}
 
 public extension MapboxUIViewRepresentable {
+    
+    // Action
     func didTapGround(_ handler: @escaping ((CLLocationCoordinate2D)->())) -> Self{
         mutating(keyPath: \.didTapGround, value: handler)
     }
@@ -20,7 +22,7 @@ public extension MapboxUIViewRepresentable {
         mutating(keyPath: \.didClearTapGround, value: handler)
     }
 
-    func didSelectPin(_ handler: @escaping ((UserInfoMGLPointAnnotationView)->())) -> Self{
+    func didSelectPin(_ handler: @escaping ((CustomPointAnnotation)->())) -> Self{
         mutating(keyPath: \.didSelectPin, value: handler)
     }
 
@@ -69,6 +71,7 @@ public extension MapboxUIViewRepresentable {
         mutating(keyPath: \.urlForPin, value: value)
     }
     
+    // Style
     func pinSize(_ value: CGSize) -> Self {
         mutating(keyPath: \.pinSize, value: value)
     }
@@ -77,28 +80,36 @@ public extension MapboxUIViewRepresentable {
         mutating(keyPath: \.clusterSize, value: value)
     }
     
+
+    func customPinSize(_ value: CGSize) -> Self {
+        mutating(keyPath: \.customPinSize, value: value)
+    }
+    
+    func routePinSize(_ value: CGSize) -> Self {
+        mutating(keyPath: \.routePinSize, value: value)
+    }
+    
+    // Pin Data Builder
     func annotationFor(_ value: ((PinResponseModel?) -> ([MGLPointAnnotation]))?) -> Self {
         mutating(keyPath: \.annotationFor, value: value)
-    }
-    
-    func didSelectCluster(_ value: (([UserInfoMGLPointAnnotationView])->())?) -> Self {
-        mutating(keyPath: \.didSelectCluster, value: value)
-    }
-    
-    func urlForRoutePin(_ value:  ((_ bbox: String) -> (String))?) -> Self {
-        mutating(keyPath: \.urlForRoutePin, value: value)
-    }
-    
-    func urlForRouteLine(_ value:  ((_ bbox: String) -> (String))?) -> Self {
-        mutating(keyPath: \.urlForRouteLine, value: value)
     }
     
     func annotationForRoutePin(_ value: ((RoutePinResponseModel?) -> ([MGLPointAnnotation]))?) -> Self {
         mutating(keyPath: \.annotationForRoutePin, value: value)
     }
     
-    func routePinSize(_ value: CGSize) -> Self {
-        mutating(keyPath: \.routePinSize, value: value)
+    // Action
+    func didSelectCluster(_ value: (([CustomPointAnnotation])->())?) -> Self {
+        mutating(keyPath: \.didSelectCluster, value: value)
+    }
+    
+    // Setup
+    func urlForRoutePin(_ value:  ((_ bbox: String) -> (String))?) -> Self {
+        mutating(keyPath: \.urlForRoutePin, value: value)
+    }
+    
+    func urlForRouteLine(_ value:  ((_ bbox: String) -> (String))?) -> Self {
+        mutating(keyPath: \.urlForRouteLine, value: value)
     }
     
     func configuration(_ value: MapViewConfigurationViewModel) -> Self{
