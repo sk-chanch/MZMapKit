@@ -122,10 +122,18 @@ class MapboxRoutePointUpdater<RoutePin: View, RoutePinResponseModel: Codable>: O
     //MARK: lookup the image to load by switching on the annotation's title string
     func viewForAnnotationRoutePoint(annotation: MGLAnnotation) -> CustomAnnotationViewRoutePoint<RoutePin>? {
         let pinType = (annotation as? CustomPointAnnotation)?.type ?? .unknown
-        let view = CustomAnnotationViewRoutePoint(annotation: annotation,
+        
+        var view = mapView?.dequeueReusableAnnotationView(withIdentifier: pinType.identifier) as? CustomAnnotationViewRoutePoint<RoutePin>
+        
+        if view == nil {
+            view = CustomAnnotationViewRoutePoint(annotation: annotation,
                                                   reuseIdentifier: pinType.identifier,
                                                   viewForRoutePin: viewForRoutePin)
-        view.frame =  CGRect(origin: .zero, size: routePinSize ?? .init(width: 30, height: 30))
+        } else {
+            view?.annotation = annotation
+        }
+        
+        view?.frame =  CGRect(origin: .zero, size: routePinSize ?? .init(width: 30, height: 30))
         
         return view
     }

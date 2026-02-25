@@ -31,7 +31,7 @@ class MapboxPinUpdater<PinContent: View, PinCluster: View, MapResponseModel: Cod
     var allPin:[CustomPointAnnotation]{
         mapView?.annotations?
             .map{$0 as? CustomPointAnnotation}
-            .filter{($0?.userInfo as? Int) == 0}
+            .filter{ $0?.type == .pinItem }
             .compactMap{$0} ?? []
     }
     weak var configuration: MapViewConfigurationViewModel?
@@ -95,25 +95,30 @@ class MapboxPinUpdater<PinContent: View, PinCluster: View, MapResponseModel: Cod
     }
     
     func update() {
-        guard let mapView = self.mapView
-        else { return }
-        
         task?.cancel()
         
         task = Task { [weak self] in
+            guard let mapView = self?.mapView
+            else { return }
+            
             do {
                 let pinResponseModel = try await self?.getPin(bbox: mapView.bboxString)
                 
+                guard !Task.isCancelled else { return }
+                
                 let pinList = self?.annotationFor?(pinResponseModel) ?? []
                 
-                guard pinList.count > 0
-                else { return }
-                
-                
-                DispatchQueue.main.async {
-                    self?.mapView?.clusterManager.annotations = pinList
+                await MainActor.run { [weak self] in
+                    
+                    if pinList.isEmpty {
+                        self?.mapView?.clusterManager.annotations = []
+                    } else {
+                        self?.mapView?.clusterManager.annotations = pinList
+                    }
+                    
+                    
                     self?.mapView?.clusterManager.updateClustersIfNeeded()
-                   
+                    
                     self?.onPinUpdate?()
                 }
                 
@@ -142,11 +147,19 @@ class MapboxPinUpdater<PinContent: View, PinCluster: View, MapResponseModel: Cod
             guard let clusterSize = clusterSize
             else { fatalError("please setup clusterSize") }
             
-            let v = CustomAnnotationClusterView(annotation: annotation,
-                                                reuseIdentifier: reuseIdentifier.identifier,
-                                                cluster: cluster,
-                                                pinCluster: pinCluster)
-            v.frame =  CGRect(origin: .zero, size: clusterSize)
+            var v = mapView?.dequeueReusableAnnotationView(withIdentifier: reuseIdentifier.identifier) as? CustomAnnotationClusterView<PinCluster>
+            
+            if v == nil {
+                v = CustomAnnotationClusterView(annotation: annotation,
+                                                    reuseIdentifier: reuseIdentifier.identifier,
+                                                    cluster: cluster,
+                                                    pinCluster: pinCluster)
+               
+            } else {
+                v?.annotation = annotation
+            }
+            
+            v?.frame =  CGRect(origin: .zero, size: clusterSize)
             
             return v
         } else if let annotationInfo = cluster.firstAnnotation as? CustomPointAnnotation , cluster.count == 1 {
@@ -154,12 +167,16 @@ class MapboxPinUpdater<PinContent: View, PinCluster: View, MapResponseModel: Cod
             guard let pinSize = pinSize
             else { fatalError("please setup pinSize") }
             
-            let view = CustomAnnotationView(annotation: annotation,
+            var view = mapView?.dequeueReusableAnnotationView(withIdentifier: reuseIdentifier.identifier) as? CustomAnnotationView<PinContent>
+            
+            if view == nil {
+                view = CustomAnnotationView(annotation: annotation,
                                             reuseIdentifier: reuseIdentifier.identifier,
                                             userInfo: annotationInfo.userInfo,
                                             pin: pinView)
+            }
             
-            view.frame = CGRect(origin: .zero, size: pinSize)
+            view?.frame = CGRect(origin: .zero, size: pinSize)
             
             return view
         } else {

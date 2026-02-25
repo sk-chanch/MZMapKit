@@ -11,19 +11,28 @@ import UIKit
 import SwiftUI
 import ClusterKit
 
-class CustomAnnotationClusterView<PinCluster: View>: MGLAnnotationView{
+class CustomAnnotationClusterView<PinCluster: View>: MGLAnnotationView {
+  
     private var hostingController: UIHostingController<PinCluster>?
     private var didUpdatecountTitle: ((String) -> Void)?
     
     let pinCluster: (CKCluster) -> PinCluster
-    let cluster: CKCluster
+    
+    override var annotation: MGLAnnotation? {
+        didSet {
+            updateDataFromAnnotation()
+        }
+    }
     
     init(annotation: MGLAnnotation?,
          reuseIdentifier: String?,
          cluster: CKCluster,
          @ViewBuilder pinCluster: @escaping (CKCluster) -> PinCluster) {
+      
         self.pinCluster = pinCluster
-        self.cluster = cluster
+        
+        self.hostingController = UIHostingController(rootView: pinCluster(cluster))
+        
         super.init(annotation: annotation, reuseIdentifier: reuseIdentifier)
 
         setupSwiftUIView()
@@ -34,9 +43,8 @@ class CustomAnnotationClusterView<PinCluster: View>: MGLAnnotationView{
     }
     
     private func setupSwiftUIView() {
-        let hostingController =  pinCluster(cluster).toUIHostingController()
-        
-        self.hostingController = hostingController
+        guard let hostingController
+        else { return }
         
         hostingController.view.backgroundColor = .clear
         hostingController.view.translatesAutoresizingMaskIntoConstraints = false
@@ -50,5 +58,18 @@ class CustomAnnotationClusterView<PinCluster: View>: MGLAnnotationView{
         ])
         
         backgroundColor = .clear
+        
+        hostingController.view.layoutIfNeeded()
+        self.layoutIfNeeded()
+    }
+    
+    private func updateDataFromAnnotation() {
+        guard let cluster = annotation as? CKCluster
+        else { return }
+        
+        let newPinCluster = pinCluster(cluster)
+        
+        self.hostingController?.rootView = newPinCluster
+        self.layoutIfNeeded()
     }
 }

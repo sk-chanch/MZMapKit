@@ -187,38 +187,39 @@ extension MapboxUIViewRepresentable {
                 
                 let pinType = (annotation as? CustomPointAnnotation)?.type ?? .unknown
                 
-                var annotationView: MGLAnnotationView? = mapView.dequeueReusableAnnotationView(withIdentifier: pinType.identifier)
+                var annotationView: MGLAnnotationView?
                 
-                // if the annotation image hasn‘t been used yet, initialize it here with the reuse identifier
-                if annotationView == nil {
-                    // lookup the image for this annotation
-                    
-                    // Check is Cluster Type
-                    if let annotation = annotation as? CKCluster{
-                        annotationView = self?.mapboxPinUpdater?.viewForAnnotation(annotation: annotation)
-                    } else if let customAnnotation = annotation as? CustomPointAnnotation {
-                     
-                        switch customAnnotation.type {
-                        case .custom :
-                            if let pinCustomContent = self?.parent.pinCustomContent {
-                                
-                                guard let customPinSize = self?.parent.customPinSize
-                                else { fatalError("please setup customPinSize") }
-                                
+                if let annotation = annotation as? CKCluster{
+                    annotationView = self?.mapboxPinUpdater?.viewForAnnotation(annotation: annotation)
+                } else if let customAnnotation = annotation as? CustomPointAnnotation {
+                 
+                    switch customAnnotation.type {
+                    case .custom :
+                        if let pinCustomContent = self?.parent.pinCustomContent {
+                            
+                            guard let customPinSize = self?.parent.customPinSize
+                            else { fatalError("please setup customPinSize") }
+                            
+                            annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: pinType.identifier) as? CustomAnnotationView<PinCustom>
+                            
+                            if annotationView == nil {
                                 annotationView = CustomAnnotationView(annotation: annotation,
                                                                       reuseIdentifier: pinType.identifier,
                                                                       userInfo: customAnnotation.userInfo,
                                                                       pin: pinCustomContent)
+                            } else {
                                 
-                                annotationView?.frame = CGRect(origin: .zero, size: customPinSize)
+                                annotationView?.annotation = annotation
                             }
-                        case .routePoint:
-                            annotationView = self?.mapboxRoutePointUpdater?.viewForAnnotationRoutePoint(annotation: annotation)
-                        default:
-                            break
+                            
+                            annotationView?.frame = CGRect(origin: .zero, size: customPinSize)
                         }
-                        
+                    case .routePoint:
+                        annotationView = self?.mapboxRoutePointUpdater?.viewForAnnotationRoutePoint(annotation: annotation)
+                    default:
+                        break
                     }
+                    
                 }
                 
                 // ignore CustomMGLPolyline return nil
