@@ -8,21 +8,26 @@
 import Foundation
 import Combine
 
+// MARK: - TrustKit Dummy Delegate
+final class EmptySessionDelegate: NSObject, URLSessionDelegate, @unchecked Sendable {}
+
 struct MapboxAPICreator {
     let url: URL?
     
+    let session: URLSession
+    
+    init(url: URL?) {
+        self.url = url
+        
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 30
+        session = URLSession(configuration: config, delegate: EmptySessionDelegate(), delegateQueue: nil)
+    }
+    
     func build<Result:Decodable>() async throws -> Result {
-        guard let url = url
-        else { throw URLError(.badURL, userInfo: ["url": url?.absoluteString ?? "n/a"]) }
+        guard let instant = MZMapKit.shared
+        else { throw URLError(.badURL) }
         
-        let (data, response) = try await URLSession.shared.data(from: url)
-        
-        guard let httpResponse = response as? HTTPURLResponse
-        else { throw URLError(.cannotParseResponse) }
-        
-        guard (200...209).contains(httpResponse.statusCode)
-        else { throw URLError(.badServerResponse, userInfo: ["code": httpResponse.statusCode]) }
-        
-        return try JSONDecoder().decode(Result.self, from: data)
+        return try await instant.build(url: url)
     }
 }

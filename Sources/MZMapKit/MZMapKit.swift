@@ -39,4 +39,26 @@ public final class MZMapKit {
         
         return mapToCoord(response)
     }
+    
+    public func build<Result:Decodable>(url: URL?) async throws -> Result {
+        guard let url = url
+        else { throw URLError(.badURL, userInfo: ["url": url?.absoluteString ?? "n/a"]) }
+        
+        guard let shared = MZMapKit.shared
+        else { throw URLError(.badURL) }
+        
+//        guard shared.configuration.session.delegate is EmptySessionDelegate
+//        else { throw URLError(.badURL, userInfo: ["message": "Session delegate must be of type EmptySessionDelegate"]) }
+        
+        let (data, response) = try await shared.configuration.session.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse
+        else { throw URLError(.cannotParseResponse) }
+        
+        guard (200...209).contains(httpResponse.statusCode)
+        else { throw URLError(.badServerResponse, userInfo: ["code": httpResponse.statusCode]) }
+        
+        return try JSONDecoder().decode(Result.self, from: data)
+    }
+    
 }
